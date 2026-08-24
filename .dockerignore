@@ -1,30 +1,64 @@
+# Dependencies
 node_modules
+.pnpm-store
+.yarn
 
+# Build output
 dist
+build
+*.tsbuildinfo
 
+# Git
 .git
 .gitignore
+.gitattributes
 
+# Logs
 *.log
-npm-debug.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-Dockerfile
-docker-compose.yml
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
 
+# Environment - QUAN TRỌNG về bảo mật
 .env
 .env.*
-.env.local
+!.env.example
 
+# IDE
 .vscode
 .idea
+*.swp
+*.swo
 
-coverage
-test
-__tests__
+# OS
+.DS_Store
+Thumbs.db
 
-*.md
-*.txt
-*.jpg
-*.png
-*.zip
-*.rar
+# Test & coverage
+coverage/
+.nyc_output
+**/*.spec.ts
+**/*.test.ts
+__tests__/
+jest.config.*
+
+# Linter cache
+.eslintcache
+.prettiercache
+
+# Docs (cân nhắc theo project)
+README.md
+CHANGELOG.md
+LICENSE
+docs/
+
+# CI/CD
+.github
+.gitlab-ci.yml

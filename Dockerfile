@@ -18,7 +18,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/proto ./proto
 COPY --from=builder /app/package*.json ./
 
-RUN npm ci
+RUN npm ci --omit=dev
 
 EXPOSE 3001
 EXPOSE 50051

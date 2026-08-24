@@ -1,0 +1,79 @@
+name: Deploy VPS
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # - name: Checkout code
+      #   uses: actions/checkout@v3
+
+      # - name: Run Tests
+      #   run: |
+      #     npm install
+      #     npm run test
+
+      - name: Backup ENV
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            mkdir -p /root/backup
+            cp /root/MICROSERVICE_ADMIN_SERVICE/.env /root/backup/.env.$(date +%Y%m%d%H%M%S)
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /root/MICROSERVICE_ADMIN_SERVICE
+            pm2 stop admin-service
+            git pull origin master
+            npm install
+            npm run build
+            docker compose down
+            docker compose up -d
+            pm2 restart admin-service
+
+      - name: Health Check & Rollback
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sleep 20
+            if curl -f http://localhost:3000/health; then
+              echo "Health check passed"
+            else
+              echo "Health check failed, rolling back..."
+              cd /root/MICROSERVICE_ADMIN_SERVICE
+              git reset --hard HEAD~1
+              npm install
+              npm run build
+              pm2 restart admin-service
+              exit 1
+            fi
+
+      - name: Notify Telegram Success
+        if: success()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="✅ CI/CD SUCCESS%0ARepo: ${{ github.repository }}%0ABranch: ${{ github.ref_name }}%0ACommit: ${{ github.sha }}%0AMessage: ${{ github.event.head_commit.message }}%0ADeployed by: ${{ github.actor }}"
+
+      - name: Notify Telegram Failure
+        if: failure()
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="❌ CI/CD FAILED%0ARepo: ${{ github.repository }}%0ABranch: ${{ github.ref_name }}%0ACommit: ${{ github.sha }}%0AMessage: ${{ github.event.head_commit.message }}%0ADeployed by: ${{ github.actor }}"
