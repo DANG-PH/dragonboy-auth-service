@@ -1020,7 +1020,13 @@ export class AuthService {
 
   async verifyGoogleToken(idToken: string, platform: string): Promise<TokenPayload> {
     try {
-      let idCheck = platform == "game" ? process.env.GOOGLE_GAME_CLIENT_ID : process.env.GOOGLE_CLIENT_ID;
+      // GOOGLE_GAME_CLIENT_ID          = Desktop OAuth Client ID (bản PC)
+      // GOOGLE_GAME_CLIENT_ID_ANDROID  = Web OAuth Client ID dùng làm "server client ID" cho
+      //                                  Credential Manager trên Android (KHÔNG phải Client ID
+      //                                  loại Android — id_token Android trả về có aud = client Web này)
+      const idCheck = platform == "game"
+        ? [process.env.GOOGLE_GAME_CLIENT_ID, "977963570920-h0qat6jqr0j309m1326blhmu7516g0rj.apps.googleusercontent.com"]
+        : process.env.GOOGLE_CLIENT_ID;
       const ticket = await this.client.verifyIdToken({
         idToken,
         audience: idCheck,
